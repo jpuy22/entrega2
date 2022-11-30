@@ -111,4 +111,25 @@ class ProductManager{
             console.log(error)
         }
     }
+
+    //Borrado logico, deja el producto en null
+    deleteProduct = (id) => {
+        try{
+            let products = this.getProdObj(this.path)
+            products[id-1].title = null
+            products[id-1].description = null
+            products[id-1].price = null
+            products[id-1].thumbnail = null
+            products[id-1].code = null
+            products[id-1].stock = null
+
+            let stg = JSON.stringify(products)
+            fs.writeFileSync(this.path, stg, error => {
+                if(error) return console.log('Hubo un error al escribir archivo')
+                return true
+            }) 
+        }catch(error){
+            console.log(error)
+        }
+    }
 }
