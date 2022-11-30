@@ -2,62 +2,59 @@ const fs = require('fs')
 
 class ProductManager{
 
-    #products
     constructor(path){
         this.path = path
         this.format = 'utf-8'
     }
 
-
-
-    createFile = async (path) => {
+    total = (path) => {
         if(fs.existsSync(path)){
-            console.log('El archivo ya existe')
-            return true
-        }else{
-            await fs.promises.writeFile(path, '', error => {
-                if(error) return ('Hubo un error al crear el Archivo')
-            })
-            return false
-        }
+            let content = fs.readFileSync(path, 'utf-8')
+            let products = JSON.parse(content)
+            const count = products.length
+            return count
+        }else return 0
+    }
+    getNextId = (path) => {
+        if(fs.existsSync(path)){
+            let content = fs.readFileSync(path, 'utf-8')
+            let products = JSON.parse(content)
+            const count = products.length
+            return (count >0) ? products[count-1].id + 1: 1
+        }else return 1
     }
 
-    getNextId = () => {
-
-        return 1
-        const count = this.#products.length
-        return (count >0) ? this.#products[count-1].id + 1: 1
-
-        
-    }
-
-    readFile = async (path) => {
-        fs.readFile(path, 'utf8', async (error, content) => {
+    readFile = (path) => {
+        fs.readFile(path, 'utf8', (error, content) => {
             if(error) return console.log('Error reading file')
             console.log('Content', content)
-            let x = await JSON.parse(content)
+            let x = JSON.parse(content)
             console.log('X: ', x)
             return x
         })
     }
+    getProdObj = (path) => {
+        if(fs.existsSync(path)){
+            let content = fs.readFileSync(this.path, 'utf-8')
+            let products = JSON.parse(content)
+            return products
+        }else{
+            return []
+        } 
+    }
     
     getProducts = async (path) =>{
-        /*
-        fs.readFile(path, 'utf8', (error, content) => {
-            if(error) return console.log('Error reading file')
-            console.log(content)
-            let x = JSON.parse(content)
-            console.log('Los productos son: \n', x)
-        })
-        */
-       const result = await this.readFile(path)
-       console.log('Result: ', result)
-       return 
+        try{
+            let products = this.getProdObj(path)
+            return products
+        }catch(error){
+            console.log(error)
+        }
     }
 
     addProduct = (title, description, price, thumbnail, code, stock) => {
         const product = {
-            id: this.getNextId(),
+            id: this.getNextId(this.path),
             title: title,
             description: description,
             price: price,
@@ -65,49 +62,53 @@ class ProductManager{
             code: code,
             stock: stock,
         }
-        let products = JSON.parse(fs.readFileSync(this.path, 'utf-8'))
 
+        let products = []
+        if(fs.existsSync(this.path)){
+            products = JSON.parse(fs.readFileSync(this.path, 'utf-8'))  
+        }
         products.push(product)
         let stg = JSON.stringify(products)
-
         fs.writeFileSync(this.path, stg, error => {
             if(error) return console.log('Hubo un error al escribir archivo')
-        })
-
-        /*
-        console.log('product',product)
-        if(fs.existsSync(this.path)){
-            let productStg = ','+JSON.stringify(product)
-            console.log('product stgring', productStg)
-
-            fs.appendFile(this.path, productStg, error => {
-                if(error) return console.log('Hubo un error, no se agregó producto')
-            })
-        }
-        */
-        
+        })   
     }
-    ///////////
-    /*
-    fs.appendFile(fileName, 'Este es el texto que estoy agregando', error => {
-        if(error) return console.log('Hay un error');
-
-        //Leer archivo
-        fs.readFile(fileName, 'utf-8', (error, contenido)=>{
-            if(error) return console.log('Hubo un error al leer');
-            console.log('Contenido: ', contenido)
-
-        })
-    })
-    */
-    //////////
+    
 
     getProductById = (id) => {
-        //
+        try{
+            let total = this.total(this.path)
+            if((id>0) && (id<(total+1))){
+               let products = this.getProdObj(this.path)
+                return products[id-1]
+            }else return 'Not found'
+        }catch(error){
+            console.log(error)
+        }
     }
 
-    updateProduct = (id) => {
-        //
+    updateProduct = (id, title, description, price, thumbnail, code, stock) => {
+        try{
+            let products = this.getProdObj(this.path)
+            let product = this.getProductById(id)
+            if(product != 'Not found'){
+                if(title) products[id-1].title = title
+                if(description) products[id-1].description = description
+                if(price) products[id-1].price = price
+                if(thumbnail) products[id-1].thumbnail = thumbnail
+                if(code) products[id-1].code = code
+                if(stock) products[id-1].stock = stock
+        
+                let stg = JSON.stringify(products)
+                fs.writeFileSync(this.path, stg, error => {
+                    if(error) return console.log('Hubo un error al escribir archivo')
+                }) 
+            }else{
+                return false
+            }
+        }catch(error){
+            console.log(error)
+        }
     }
 }
 
@@ -127,11 +128,23 @@ async function run(){
     //pm.addProduct('arroz', 'mejor arroz', 15, 'http://imagen2.jpg', 1235, 50)
     //pm.addProduct('tomate', 'mejor tomate', 12, 'http://imagen3.jpg', 1236, 75)
     //pm.addProduct('leche', 'mejor leche', 23, 'http://imagen4.jpg', 1336, 73)
+    //pm.addProduct('coca cola', 'best ever', 110, 'http://imagen5.jpg', 13356, 103)
     //console.log(result)
-    await pm.getProducts(path)
+
+    let x = pm.getProducts(path)
+    console.log(x)
     //let result =  JSON.parse(pm.readFile(path))
     //console.log(result)
     //pm.readFile(path)
+
+    let y = pm.getProductById(5)
+    console.log('El producto es: ',y)
+
+    //title, description, price, thumbnail, code, stock
+    let z = pm.updateProduct(5, '', '', 300, '', '','' )
+    console.log('Producto actualizado: ', z)
+
+
 
 }
 //Get Products
